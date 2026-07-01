@@ -298,7 +298,7 @@
 
     table {
       width: 100%;
-      min-width: 1360px;
+      min-width: 1240px;
       border-collapse: collapse;
       table-layout: fixed;
     }
@@ -440,48 +440,65 @@
     .status-select[data-status="已完成"] { background: #dff8eb; color: #087345; border-color: #8de0b8; }
     .status-select[data-status="暂停"] { background: #f1eefb; color: #6b46c1; border-color: #c9b9f2; }
 
-    .priority-select {
-      font-weight: 800;
-    }
-
-    .priority-select[data-priority="P0"] {
-      background: #ffe8ec;
-      color: #d0182d;
-      border-color: #ffb6c0;
-    }
-
-    .priority-select[data-priority="P1"] {
-      background: #fff1df;
-      color: #a35a00;
-      border-color: #ffd49a;
-    }
-
-    .priority-select[data-priority="P2"] {
-      background: #e6f8ff;
-      color: #087596;
-      border-color: #a9dff1;
-    }
-
-    .progress-cell {
+    .priority-control {
       display: grid;
-      grid-template-columns: 1fr 58px;
+      grid-template-columns: repeat(3, 28px);
+      gap: 3px;
       align-items: center;
-      gap: 8px;
     }
 
-    input[type="range"] {
-      width: 100%;
-      accent-color: var(--blue);
-    }
-
-    .progress-number {
-      width: 58px;
+    .priority-btn {
       height: 28px;
       border: 1px solid var(--line);
       border-radius: 6px;
-      text-align: right;
+      background: #fff;
+      color: #68758a;
+      padding: 0;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .priority-btn[data-priority="P0"].active {
+      background: #ffe8ec;
+      color: #d0182d;
+      border-color: #ff9dab;
+    }
+
+    .priority-btn[data-priority="P1"].active {
+      background: #fff1df;
+      color: #a35a00;
+      border-color: #ffc56f;
+    }
+
+    .priority-btn[data-priority="P2"].active {
+      background: #e6f8ff;
+      color: #087596;
+      border-color: #8ed4ea;
+    }
+
+    .progress-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .progress-number {
+      width: 62px;
+      height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      text-align: center;
       padding: 0 6px;
       background: #fff;
+      color: var(--blue);
+      font-weight: 800;
+    }
+
+    .progress-number::-webkit-outer-spin-button,
+    .progress-number::-webkit-inner-spin-button {
+      margin: 0;
+      -webkit-appearance: none;
     }
 
     .note {
@@ -810,13 +827,13 @@
       <div class="actions">
         <button class="btn primary" id="addTaskBtn">添加任务</button>
         <button class="btn" id="syncSystemBtn">同步系统进度</button>
-        <label class="btn" for="appendFile">导入新任务</label>
+        <label class="btn" for="appendFile">追加任务</label>
         <input class="hidden" id="appendFile" type="file" accept=".json,.csv,text/csv,application/json">
         <button class="btn" id="scheduleBtn">自动排期</button>
         <button class="btn" id="pdfBtn">导出 PDF</button>
         <button class="btn" id="excelBtn">导出 Excel</button>
         <button class="btn" id="exportBtn">导出数据</button>
-        <label class="btn" for="importFile">导入数据</label>
+        <label class="btn" for="importFile">恢复数据</label>
         <input class="hidden" id="importFile" type="file" accept="application/json">
         <button class="btn danger" id="resetBtn">恢复初始</button>
       </div>
@@ -865,7 +882,7 @@
                   <th style="width:92px">优先级</th>
                   <th style="width:120px">开始日期</th>
                   <th style="width:120px">截止日期</th>
-                  <th style="width:210px">当前进度</th>
+                  <th style="width:92px">进度</th>
                   <th style="width:230px">备注</th>
                 </tr>
               </thead>
@@ -1274,27 +1291,65 @@
     }
 
     function normalizeTask(task) {
-      const lang = task.lang || task["语种"] || "";
-      const owner = task.owner || task["负责人"] || "";
-      const name = task.name || task["任务名称"] || [lang, task.group || task["任务分组"] || "新任务"].filter(Boolean).join(" ");
+      const data = normalizeTaskKeys(task);
+      const lang = data.lang || "";
+      const owner = data.owner || "";
+      const name = data.name || [lang, data.group || "新任务"].filter(Boolean).join(" ");
       return {
-        id: task.id || `task-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        group: task.group || task["任务分组"] || "GOT 修改",
+        id: data.id || `task-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        group: data.group || "GOT 修改",
         name,
         lang,
-        langCode: task.langCode || langCodeOf(lang),
+        langCode: data.langCode || langCodeOf(lang),
         owner,
         avatar: task.avatar || avatarOf(owner),
-        type: task.type || task["任务类型"] || "修改",
-        status: task.status || task["任务状态"] || "未开始",
-        priority: task.priority || task["优先级"] || "P1",
-        start: task.start || task["开始日期"] || "",
-        due: task.due || task["截止日期"] || "",
-        progress: clamp(String(task.progress || task["当前进度"] || "0").replace("%", "")),
-        size: Number(task.size || task["任务量"] || defaultSize(task.group || task["任务分组"] || "")),
-        daily: Number(task.daily || task["每日能力"] || defaultDaily(lang, owner, task.group || task["任务分组"] || "")),
-        note: task.note || task["备注"] || ""
+        type: data.type || "修改",
+        status: data.status || "未开始",
+        priority: normalizePriority(data.priority || "P1"),
+        start: data.start || "",
+        due: data.due || "",
+        progress: clamp(String(data.progress || "0").replace("%", "")),
+        size: Number(data.size || defaultSize(data.group || "")),
+        daily: Number(data.daily || defaultDaily(lang, owner, data.group || "")),
+        note: data.note || ""
       };
+    }
+
+    function normalizeTaskKeys(task) {
+      const aliases = {
+        id: ["id", "ID", "任务编号", "编号"],
+        group: ["group", "任务分组", "分组", "任务大类", "项目", "模块"],
+        name: ["name", "任务名称", "任务名", "名称", "标题", "任务"],
+        lang: ["lang", "语种", "语言", "目标语言", "language"],
+        langCode: ["langCode", "语言代码", "语种代码", "languageCode"],
+        owner: ["owner", "负责人", "人员", "执行人", "成员", "ownerName", "assignee"],
+        type: ["type", "任务类型", "类型"],
+        status: ["status", "任务状态", "状态", "进度状态"],
+        priority: ["priority", "优先级", "优先", "P"],
+        start: ["start", "开始日期", "开始", "开始时间", "startDate"],
+        due: ["due", "截止日期", "截止", "截止时间", "交付", "dueDate", "deadline"],
+        progress: ["progress", "当前进度", "进度", "完成度", "百分比"],
+        size: ["size", "任务量", "总量", "总条数", "条数"],
+        daily: ["daily", "每日能力", "日处理量", "每天条数", "日产能"],
+        note: ["note", "备注", "说明", "补充", "comment"]
+      };
+      const normalized = {};
+      Object.entries(aliases).forEach(([key, names]) => {
+        for (const name of names) {
+          if (task[name] !== undefined && task[name] !== "") {
+            normalized[key] = task[name];
+            break;
+          }
+        }
+      });
+      return normalized;
+    }
+
+    function normalizePriority(value) {
+      const text = String(value || "").trim().toUpperCase();
+      if (text.includes("0") || text.includes("紧急")) return "P0";
+      if (text.includes("2") || text.includes("低")) return "P2";
+      return "P1";
     }
 
     function parseTaskImport(text, fileName) {
@@ -1605,15 +1660,14 @@
             </select>
           </td>
           <td>
-            <select class="status-select priority-select" data-field="priority" data-priority="${row.priority}">
-              ${["P0", "P1", "P2"].map(priority => `<option ${priority === row.priority ? "selected" : ""}>${priority}</option>`).join("")}
-            </select>
+            <div class="priority-control" data-field="priority">
+              ${["P0", "P1", "P2"].map(priority => `<button type="button" class="priority-btn ${priority === row.priority ? "active" : ""}" data-priority="${priority}">${priority}</button>`).join("")}
+            </div>
           </td>
           <td><input data-field="start" class="note" value="${escapeAttr(row.start || "")}" placeholder="开始日期"></td>
           <td><input data-field="due" class="note" value="${escapeAttr(row.due || "")}" placeholder="截止日期"></td>
           <td>
             <div class="progress-cell">
-              <input data-field="progress" type="range" min="0" max="100" value="${row.progress}">
               <input data-field="progressNumber" class="progress-number" type="number" min="0" max="100" value="${row.progress}">
             </div>
           </td>
@@ -1626,8 +1680,19 @@
       els.taskRows.querySelectorAll("tr[data-id]").forEach(tr => {
         const row = rows.find(item => item.id === tr.dataset.id);
         tr.querySelectorAll("[data-field]").forEach(input => {
+          if (input.dataset.field === "priority") return;
           input.addEventListener("input", () => updateRow(row, input, tr));
           input.addEventListener("change", () => updateRow(row, input, tr));
+        });
+        tr.querySelectorAll(".priority-btn").forEach(button => {
+          button.addEventListener("click", () => {
+            row.priority = button.dataset.priority;
+            tr.querySelectorAll(".priority-btn").forEach(item => item.classList.toggle("active", item === button));
+            saveRows();
+            renderSummary();
+            renderRails();
+            if (currentView === "person") renderPersonCards();
+          });
         });
       });
     }
@@ -1636,23 +1701,23 @@
       const field = input.dataset.field;
       if (field === "progress") {
         row.progress = clamp(input.value);
-        tr.querySelector('[data-field="progressNumber"]').value = row.progress;
+        const numberInput = tr.querySelector('[data-field="progressNumber"]');
+        if (numberInput) numberInput.value = row.progress;
       }
       if (field === "progressNumber") {
         row.progress = clamp(input.value);
-        tr.querySelector('[data-field="progress"]').value = row.progress;
+        const rangeInput = tr.querySelector('[data-field="progress"]');
+        if (rangeInput) rangeInput.value = row.progress;
       }
       if (field === "status") {
         row.status = input.value;
         input.dataset.status = input.value;
         if (row.status === "已完成" && Number(row.progress) < 100) row.progress = 100;
         if (row.status !== "已完成" && Number(row.progress) === 100) row.progress = 99;
-        tr.querySelector('[data-field="progress"]').value = row.progress;
-        tr.querySelector('[data-field="progressNumber"]').value = row.progress;
-      }
-      if (field === "priority") {
-        row.priority = input.value;
-        input.dataset.priority = input.value;
+        const rangeInput = tr.querySelector('[data-field="progress"]');
+        const numberInput = tr.querySelector('[data-field="progressNumber"]');
+        if (rangeInput) rangeInput.value = row.progress;
+        if (numberInput) numberInput.value = row.progress;
       }
       if (field === "owner") {
         row.owner = input.value.trim();
