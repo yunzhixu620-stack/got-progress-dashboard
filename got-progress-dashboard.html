@@ -1,0 +1,1363 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>多语言任务进度</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --line: #dce3ee;
+      --line-soft: #edf1f6;
+      --text: #152033;
+      --muted: #68758a;
+      --blue: #3766f5;
+      --green: #11a56a;
+      --orange: #f09a2a;
+      --red: #ee4d5a;
+      --purple: #805ad5;
+      --cyan: #0d9488;
+      --shadow: 0 14px 36px rgba(27, 39, 65, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 1120px;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      padding: 22px 26px 34px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .title p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: #26344d;
+      padding: 0 12px;
+      cursor: pointer;
+      transition: .15s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: #b9c5d8;
+      box-shadow: 0 4px 14px rgba(30, 45, 70, .08);
+    }
+
+    .btn.primary {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: white;
+      font-weight: 650;
+    }
+
+    .btn.danger {
+      color: var(--red);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      background: #eef2f8;
+      padding: 4px;
+      border-radius: 8px;
+    }
+
+    .tab {
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: #536177;
+      height: 32px;
+      padding: 0 18px;
+      cursor: pointer;
+      font-weight: 650;
+    }
+
+    .tab.active {
+      background: #fff;
+      color: var(--blue);
+      box-shadow: 0 3px 10px rgba(31, 47, 73, .08);
+    }
+
+    .filters {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .field, .select {
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: #26344d;
+      padding: 0 10px;
+      min-width: 136px;
+    }
+
+    .field {
+      width: 180px;
+    }
+
+    .board {
+      display: grid;
+      gap: 14px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 2px;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .metric strong {
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line-soft);
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    th {
+      color: #4b5870;
+      background: #fbfcfe;
+      font-size: 12px;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    tr.task-group td {
+      background: #fffaf1;
+      border-top: 1px solid #f2dfbd;
+      font-weight: 700;
+    }
+
+    tr:hover td {
+      background: #f9fbff;
+    }
+
+    tr.task-group:hover td {
+      background: #fff7e8;
+    }
+
+    .drag {
+      color: #9aa6b6;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .task-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .star {
+      color: #c5ceda;
+      font-size: 18px;
+    }
+
+    .star.hot {
+      color: var(--orange);
+    }
+
+    .lang {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      height: 24px;
+      border-radius: 999px;
+      padding: 0 10px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .lang.es { background: #e9efff; color: #3057d7; }
+    .lang.fr { background: #fff1dd; color: #a35b00; }
+    .lang.en { background: #dff6ff; color: #047596; }
+    .lang.de { background: #e7f8eb; color: #147b3a; }
+    .lang.pt { background: #dff7ef; color: #0c7660; }
+    .lang.ja { background: #ffe8e8; color: #b63842; }
+    .lang.ko { background: #eee8ff; color: #6a43c5; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 54px;
+      height: 24px;
+      border-radius: 6px;
+      padding: 0 9px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .priority-p0 { background: #ffe8ec; color: #d0182d; }
+    .priority-p1 { background: #fff1df; color: #a35a00; }
+    .priority-p2 { background: #e6f8ff; color: #087596; }
+
+    .status-select {
+      width: 92px;
+      height: 30px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 8px;
+      background: #f7faff;
+    }
+
+    .status-select[data-status="进行中"] { background: #eaf3ff; color: #115cae; border-color: #a7cdf8; }
+    .status-select[data-status="待审核"] { background: #fff3d8; color: #925500; border-color: #ffd384; }
+    .status-select[data-status="已完成"] { background: #dff8eb; color: #087345; border-color: #8de0b8; }
+    .status-select[data-status="暂停"] { background: #f1eefb; color: #6b46c1; border-color: #c9b9f2; }
+
+    .progress-cell {
+      display: grid;
+      grid-template-columns: 1fr 46px;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    .progress-number {
+      width: 46px;
+      height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      text-align: right;
+      padding: 0 6px;
+      background: #fff;
+    }
+
+    .note {
+      width: 100%;
+      height: 30px;
+      border: 1px dashed var(--line);
+      border-radius: 6px;
+      padding: 0 8px;
+      background: #fff;
+      color: #26344d;
+    }
+
+    .owner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #fff;
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+
+    .owner span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .avatar.a { background: #8b5cf6; }
+    .avatar.b { background: #0ea5e9; }
+    .avatar.c { background: #f97316; }
+    .avatar.d { background: #22c55e; }
+    .avatar.e { background: #14b8a6; }
+    .avatar.f { background: #ef4444; }
+    .avatar.g { background: #6366f1; }
+
+    .empty {
+      padding: 34px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .person-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      background: rgba(18, 28, 45, .35);
+      padding: 24px;
+    }
+
+    .modal {
+      width: min(860px, 100%);
+      max-height: 88vh;
+      overflow: auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 24px 80px rgba(15, 23, 42, .25);
+    }
+
+    .modal-head,
+    .modal-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .modal-foot {
+      border-top: 1px solid var(--line-soft);
+      border-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .form-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .form-field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      width: 100%;
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 7px 9px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .form-field textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .span-3 {
+      grid-column: span 3;
+    }
+
+    .person-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .person-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line-soft);
+      background: #fbfcfe;
+    }
+
+    .person-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      font-weight: 800;
+    }
+
+    .person-meta {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .person-body {
+      padding: 12px 14px 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .mini-task {
+      display: grid;
+      gap: 7px;
+      padding-bottom: 11px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .mini-task:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .mini-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .bar {
+      height: 8px;
+      border-radius: 999px;
+      background: #e8edf4;
+      overflow: hidden;
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--blue);
+      border-radius: inherit;
+    }
+
+    .save-state {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media print {
+      body {
+        min-width: 0;
+        background: #fff;
+      }
+
+      .app {
+        padding: 12px;
+      }
+
+      .actions,
+      .toolbar {
+        display: none !important;
+      }
+
+      .panel,
+      .metric,
+      .person-card {
+        box-shadow: none;
+      }
+
+      th {
+        position: static;
+      }
+
+      input,
+      select {
+        border: 0 !important;
+        background: transparent !important;
+      }
+
+      input[type="range"] {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="topbar">
+      <div class="title">
+        <h1>多语言任务进度</h1>
+        <p id="saveState">已开启本地记忆</p>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="addTaskBtn">添加任务</button>
+        <label class="btn" for="appendFile">导入新任务</label>
+        <input class="hidden" id="appendFile" type="file" accept=".json,.csv,text/csv,application/json">
+        <button class="btn" id="scheduleBtn">自动排期</button>
+        <button class="btn" id="pdfBtn">导出 PDF</button>
+        <button class="btn" id="excelBtn">导出 Excel</button>
+        <button class="btn" id="exportBtn">导出数据</button>
+        <label class="btn" for="importFile">导入数据</label>
+        <input class="hidden" id="importFile" type="file" accept="application/json">
+        <button class="btn danger" id="resetBtn">恢复初始</button>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="tabs">
+        <button class="tab active" data-view="task">任务总览</button>
+        <button class="tab" data-view="person">个人进度</button>
+      </div>
+      <div class="filters">
+        <input class="field" id="searchInput" placeholder="搜索任务、语种、负责人">
+        <select class="select" id="taskFilter">
+          <option value="全部任务">全部任务</option>
+          <option value="BALL 修改">BALL 修改</option>
+          <option value="GOT 术语库修改">GOT 术语库修改</option>
+          <option value="GOT 修改">GOT 修改</option>
+        </select>
+        <select class="select" id="statusFilter">
+          <option value="全部状态">全部状态</option>
+          <option value="未开始">未开始</option>
+          <option value="进行中">进行中</option>
+          <option value="待审核">待审核</option>
+          <option value="已完成">已完成</option>
+          <option value="暂停">暂停</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="summary-grid" id="summaryGrid"></section>
+
+    <section class="board" id="taskView">
+      <div class="panel">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:38px"></th>
+              <th style="width:180px">任务名称</th>
+              <th style="width:92px">语种</th>
+              <th style="width:170px">负责人</th>
+              <th style="width:100px">任务类型</th>
+              <th style="width:108px">任务状态</th>
+              <th style="width:92px">优先级</th>
+              <th style="width:120px">开始日期</th>
+              <th style="width:120px">截止日期</th>
+              <th style="width:210px">当前进度</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody id="taskRows"></tbody>
+        </table>
+        <div class="empty hidden" id="emptyTask">没有符合条件的任务</div>
+      </div>
+    </section>
+
+    <section class="person-grid hidden" id="personView"></section>
+
+    <section class="modal-backdrop hidden" id="taskModal">
+      <form class="modal" id="taskForm">
+        <div class="modal-head">
+          <h2>添加任务</h2>
+          <button class="btn" type="button" id="closeModalBtn">关闭</button>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label>任务分组</label>
+            <select name="group">
+              <option>BALL 修改</option>
+              <option selected>GOT 术语库修改</option>
+              <option>GOT 修改</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>任务名称</label>
+            <input name="name" required placeholder="例如：意大利语 GOT 术语库">
+          </div>
+          <div class="form-field">
+            <label>语种</label>
+            <input name="lang" required placeholder="例如：意大利语">
+          </div>
+          <div class="form-field">
+            <label>负责人</label>
+            <input name="owner" required placeholder="负责人姓名">
+          </div>
+          <div class="form-field">
+            <label>任务类型</label>
+            <select name="type">
+              <option>修改</option>
+              <option>术语库</option>
+              <option>翻译</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>状态</label>
+            <select name="status">
+              <option selected>未开始</option>
+              <option>进行中</option>
+              <option>待审核</option>
+              <option>已完成</option>
+              <option>暂停</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>优先级</label>
+            <select name="priority">
+              <option>P0</option>
+              <option selected>P1</option>
+              <option>P2</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>开始日期</label>
+            <input name="start" placeholder="2026/07/02">
+          </div>
+          <div class="form-field">
+            <label>截止日期</label>
+            <input name="due" placeholder="2026/07/05">
+          </div>
+          <div class="form-field">
+            <label>当前进度</label>
+            <input name="progress" type="number" min="0" max="100" value="0">
+          </div>
+          <div class="form-field">
+            <label>任务量</label>
+            <input name="size" type="number" min="0" placeholder="例如：1749">
+          </div>
+          <div class="form-field">
+            <label>每日能力</label>
+            <input name="daily" type="number" min="0" placeholder="例如：400">
+          </div>
+          <div class="form-field span-3">
+            <label>备注</label>
+            <textarea name="note" placeholder="补充说明"></textarea>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn" type="button" id="clearFormBtn">清空</button>
+          <button class="btn primary" type="submit">保存任务</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const STORE_KEY = "codex.multilang.progress.v1";
+
+    const seedRows = [
+      { id: "ball-ja", group: "BALL 修改", name: "日语 BALL 修改收尾", lang: "日语", langCode: "ja", owner: "承煦", avatar: "f", type: "修改", status: "进行中", priority: "P0", start: "2026/07/01", due: "2026/07/01", progress: 90, note: "今天优先结束 BALL，今天不排 GOT" },
+      { id: "ball-ko", group: "BALL 修改", name: "韩语 BALL 修改", lang: "韩语", langCode: "ko", owner: "佳宁", avatar: "g", type: "修改", status: "暂停", priority: "P0", start: "2026/07/01", due: "", progress: 0, note: "BALL 优先；今天请假，待同步" },
+
+      { id: "term-es", group: "GOT 术语库修改", name: "西语 GOT 术语库", lang: "西班牙语", langCode: "es", owner: "爻忍", avatar: "a", type: "术语库", status: "已完成", priority: "P0", start: "2026/07/01", due: "2026/07/01", progress: 100, note: "今天完成后可接 GOT 修改" },
+      { id: "term-fr", group: "GOT 术语库修改", name: "法语 GOT 术语库", lang: "法语", langCode: "fr", owner: "树吱", avatar: "b", type: "术语库", status: "进行中", priority: "P0", start: "2026/07/01", due: "2026/07/02 上午", progress: 70, note: "明天上午必须过完" },
+      { id: "term-en", group: "GOT 术语库修改", name: "英语 GOT 术语库", lang: "英语", langCode: "en", owner: "屿舟、游城", avatar: "c", type: "术语库", status: "未开始", priority: "P1", start: "2026/07/02", due: "2026/07/05", progress: 0, note: "两个人预计 1 天完成 1749 条" },
+      { id: "term-de", group: "GOT 术语库修改", name: "德语 GOT 术语库", lang: "德语", langCode: "de", owner: "卢娜", avatar: "d", type: "术语库", status: "进行中", priority: "P1", start: "2026/07/01", due: "2026/07/05", progress: 50, note: "按平均速度每天 25%" },
+      { id: "term-pt", group: "GOT 术语库修改", name: "葡语 GOT 术语库", lang: "葡萄牙语", langCode: "pt", owner: "穆兰", avatar: "e", type: "术语库", status: "进行中", priority: "P1", start: "2026/07/01", due: "2026/07/05", progress: 24, note: "约每天 400 条，4 天内完成" },
+      { id: "term-ja", group: "GOT 术语库修改", name: "日语 GOT 术语库", lang: "日语", langCode: "ja", owner: "承煦", avatar: "f", type: "术语库", status: "未开始", priority: "P1", start: "2026/07/02", due: "2026/07/05", progress: 0, note: "BALL 结束后再排" },
+      { id: "term-ko", group: "GOT 术语库修改", name: "韩语 GOT 术语库", lang: "韩语", langCode: "ko", owner: "佳宁", avatar: "g", type: "术语库", status: "未开始", priority: "P2", start: "", due: "", progress: 0, note: "等 BALL 和请假信息同步" },
+
+      { id: "edit-es", group: "GOT 修改", name: "西语 GOT 修改", lang: "西班牙语", langCode: "es", owner: "爻忍", avatar: "a", type: "修改", status: "未开始", priority: "P1", start: "术语库完成后", due: "", progress: 0, note: "60000 条池子，非全量修改" },
+      { id: "edit-fr", group: "GOT 修改", name: "法语 GOT 修改", lang: "法语", langCode: "fr", owner: "树吱", avatar: "b", type: "修改", status: "未开始", priority: "P1", start: "术语库完成后", due: "", progress: 0, note: "明天上午术语库过完后接入" },
+      { id: "edit-en", group: "GOT 修改", name: "英语 GOT 修改", lang: "英语", langCode: "en", owner: "屿舟、游城", avatar: "c", type: "修改", status: "未开始", priority: "P1", start: "术语库完成后", due: "", progress: 0, note: "适合承接较大修改量" },
+      { id: "edit-de", group: "GOT 修改", name: "德语 GOT 修改", lang: "德语", langCode: "de", owner: "卢娜", avatar: "d", type: "修改", status: "未开始", priority: "P2", start: "术语库完成后", due: "", progress: 0, note: "术语库完成后接入" },
+      { id: "edit-pt", group: "GOT 修改", name: "葡语 GOT 修改", lang: "葡萄牙语", langCode: "pt", owner: "穆兰", avatar: "e", type: "修改", status: "未开始", priority: "P2", start: "术语库完成后", due: "", progress: 0, note: "术语库完成后接入" },
+      { id: "edit-ja", group: "GOT 修改", name: "日语 GOT 修改", lang: "日语", langCode: "ja", owner: "承煦", avatar: "f", type: "修改", status: "未开始", priority: "P2", start: "术语库完成后", due: "", progress: 0, note: "BALL 和术语库之后再接" },
+      { id: "edit-ko", group: "GOT 修改", name: "韩语 GOT 修改", lang: "韩语", langCode: "ko", owner: "佳宁", avatar: "g", type: "修改", status: "未开始", priority: "P2", start: "术语库完成后", due: "", progress: 0, note: "暂不排，等待同步" }
+    ];
+
+    let rows = loadRows();
+    let currentView = "task";
+    let lastRemoteRows = "";
+    let remoteSaveTimer = null;
+
+    const els = {
+      taskRows: document.getElementById("taskRows"),
+      personView: document.getElementById("personView"),
+      taskView: document.getElementById("taskView"),
+      emptyTask: document.getElementById("emptyTask"),
+      summaryGrid: document.getElementById("summaryGrid"),
+      search: document.getElementById("searchInput"),
+      taskFilter: document.getElementById("taskFilter"),
+      statusFilter: document.getElementById("statusFilter"),
+      saveState: document.getElementById("saveState"),
+      addTaskBtn: document.getElementById("addTaskBtn"),
+      appendFile: document.getElementById("appendFile"),
+      scheduleBtn: document.getElementById("scheduleBtn"),
+      exportBtn: document.getElementById("exportBtn"),
+      pdfBtn: document.getElementById("pdfBtn"),
+      excelBtn: document.getElementById("excelBtn"),
+      importFile: document.getElementById("importFile"),
+      resetBtn: document.getElementById("resetBtn"),
+      taskModal: document.getElementById("taskModal"),
+      taskForm: document.getElementById("taskForm"),
+      closeModalBtn: document.getElementById("closeModalBtn"),
+      clearFormBtn: document.getElementById("clearFormBtn")
+    };
+
+    document.querySelectorAll(".tab").forEach(button => {
+      button.addEventListener("click", () => {
+        currentView = button.dataset.view;
+        document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item === button));
+        els.taskView.classList.toggle("hidden", currentView !== "task");
+        els.personView.classList.toggle("hidden", currentView !== "person");
+        render();
+      });
+    });
+
+    [els.search, els.taskFilter, els.statusFilter].forEach(input => {
+      input.addEventListener("input", render);
+      input.addEventListener("change", render);
+    });
+
+    els.addTaskBtn.addEventListener("click", () => {
+      els.taskForm.reset();
+      els.taskModal.classList.remove("hidden");
+    });
+
+    els.closeModalBtn.addEventListener("click", () => {
+      els.taskModal.classList.add("hidden");
+    });
+
+    els.clearFormBtn.addEventListener("click", () => {
+      els.taskForm.reset();
+    });
+
+    els.taskModal.addEventListener("click", event => {
+      if (event.target === els.taskModal) els.taskModal.classList.add("hidden");
+    });
+
+    els.taskForm.addEventListener("submit", event => {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(els.taskForm).entries());
+      rows.push(normalizeTask(data));
+      saveRows();
+      render();
+      els.taskModal.classList.add("hidden");
+    });
+
+    els.appendFile.addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const imported = parseTaskImport(reader.result, file.name);
+          if (!imported.length) throw new Error("没有识别到可导入的任务");
+          rows.push(...imported.map(normalizeTask));
+          saveRows();
+          render();
+          alert(`已导入 ${imported.length} 个新任务`);
+        } catch (error) {
+          alert("导入失败：" + error.message);
+        }
+      };
+      reader.readAsText(file, "utf-8");
+      event.target.value = "";
+    });
+
+    els.scheduleBtn.addEventListener("click", () => {
+      const startText = prompt("从哪天开始排期？", formatDate(new Date()));
+      if (!startText) return;
+      autoSchedule(startText);
+      saveRows();
+      render();
+      alert("已按负责人、优先级和每日能力自动排期");
+    });
+
+    els.exportBtn.addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "multilang-progress-data.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    els.pdfBtn.addEventListener("click", () => {
+      window.print();
+    });
+
+    els.excelBtn.addEventListener("click", () => {
+      const list = filteredRows();
+      const headers = ["任务分组", "任务名称", "语种", "负责人", "任务类型", "任务状态", "优先级", "开始日期", "截止日期", "当前进度", "任务量", "每日能力", "备注"];
+      const bodyRows = list.map(row => [
+        row.group,
+        row.name,
+        row.lang,
+        row.owner,
+        row.type,
+        row.status,
+        row.priority,
+        row.start || "",
+        row.due || "",
+        `${row.progress}%`,
+        row.size || "",
+        row.daily || "",
+        row.note || ""
+      ]);
+      const table = [headers, ...bodyRows].map(cells => `<tr>${cells.map(cell => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("");
+      const workbook = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head><meta charset="utf-8"><style>td{mso-number-format:"\\@";border:.5pt solid #c8d0dc;padding:6px;} tr:first-child td{font-weight:bold;background:#eef3ff;}</style></head>
+        <body><table>${table}</table></body></html>
+      `;
+      const blob = new Blob(["\ufeff", workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "多语言任务进度.xls";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    els.importFile.addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const imported = JSON.parse(reader.result);
+          if (!Array.isArray(imported)) throw new Error("数据格式不正确");
+          rows = imported.map(normalizeTask);
+          saveRows();
+          render();
+        } catch (error) {
+          alert("导入失败：" + error.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = "";
+    });
+
+    els.resetBtn.addEventListener("click", () => {
+      if (!confirm("确认恢复初始数据？当前本地修改会被清除。")) return;
+      rows = structuredClone(seedRows);
+      saveRows();
+      render();
+    });
+
+    function loadRows() {
+      try {
+        const saved = localStorage.getItem(STORE_KEY);
+        const loaded = saved ? JSON.parse(saved) : structuredClone(seedRows);
+        return loaded.map(normalizeTask);
+      } catch {
+        return structuredClone(seedRows).map(normalizeTask);
+      }
+    }
+
+    async function loadRemoteRows() {
+      if (location.protocol === "file:") {
+        els.saveState.textContent = "当前是单机记忆；用服务地址打开可多人同步";
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/rows", { cache: "no-store" });
+        if (!response.ok) throw new Error("读取失败");
+        const remoteRows = await response.json();
+        if (!Array.isArray(remoteRows)) throw new Error("数据格式不正确");
+
+        const remoteText = JSON.stringify(remoteRows);
+        if (remoteText !== lastRemoteRows && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "SELECT") {
+          rows = remoteRows.map(normalizeTask);
+          lastRemoteRows = remoteText;
+          localStorage.setItem(STORE_KEY, JSON.stringify(rows));
+          render();
+          els.saveState.textContent = "已同步共享数据";
+        }
+      } catch {
+        els.saveState.textContent = "共享同步暂不可用，当前改动仍会保存在本机";
+      }
+    }
+
+    function saveRows() {
+      localStorage.setItem(STORE_KEY, JSON.stringify(rows));
+      const time = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+      els.saveState.textContent = "已自动保存 " + time;
+
+      if (location.protocol !== "file:") {
+        clearTimeout(remoteSaveTimer);
+        remoteSaveTimer = setTimeout(async () => {
+          try {
+            const body = JSON.stringify(rows);
+            const response = await fetch("/api/rows", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body
+            });
+            if (!response.ok) throw new Error("保存失败");
+            lastRemoteRows = body;
+            els.saveState.textContent = "已保存到共享数据 " + time;
+          } catch {
+            els.saveState.textContent = "共享保存失败，已保存在本机";
+          }
+        }, 250);
+      }
+    }
+
+    function normalizeTask(task) {
+      const lang = task.lang || task["语种"] || "";
+      const owner = task.owner || task["负责人"] || "";
+      const name = task.name || task["任务名称"] || [lang, task.group || task["任务分组"] || "新任务"].filter(Boolean).join(" ");
+      return {
+        id: task.id || `task-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        group: task.group || task["任务分组"] || "GOT 修改",
+        name,
+        lang,
+        langCode: task.langCode || langCodeOf(lang),
+        owner,
+        avatar: task.avatar || avatarOf(owner),
+        type: task.type || task["任务类型"] || "修改",
+        status: task.status || task["任务状态"] || "未开始",
+        priority: task.priority || task["优先级"] || "P1",
+        start: task.start || task["开始日期"] || "",
+        due: task.due || task["截止日期"] || "",
+        progress: clamp(String(task.progress || task["当前进度"] || "0").replace("%", "")),
+        size: Number(task.size || task["任务量"] || defaultSize(task.group || task["任务分组"] || "")),
+        daily: Number(task.daily || task["每日能力"] || defaultDaily(lang, owner, task.group || task["任务分组"] || "")),
+        note: task.note || task["备注"] || ""
+      };
+    }
+
+    function parseTaskImport(text, fileName) {
+      const trimmed = text.trim();
+      if (!trimmed) return [];
+      if (fileName.toLowerCase().endsWith(".json") || trimmed.startsWith("[")) {
+        const parsed = JSON.parse(trimmed);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      }
+
+      const rows = parseCsv(trimmed);
+      if (rows.length < 2) return [];
+      const headers = rows[0].map(header => header.trim());
+      return rows.slice(1).filter(cells => cells.some(Boolean)).map(cells => {
+        const item = {};
+        headers.forEach((header, index) => item[header] = cells[index] || "");
+        return item;
+      });
+    }
+
+    function parseCsv(text) {
+      const result = [];
+      let row = [];
+      let value = "";
+      let quoted = false;
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text[i + 1];
+        if (char === '"' && quoted && next === '"') {
+          value += '"';
+          i++;
+        } else if (char === '"') {
+          quoted = !quoted;
+        } else if ((char === "," || char === "\t") && !quoted) {
+          row.push(value.trim());
+          value = "";
+        } else if ((char === "\n" || char === "\r") && !quoted) {
+          if (char === "\r" && next === "\n") i++;
+          row.push(value.trim());
+          result.push(row);
+          row = [];
+          value = "";
+        } else {
+          value += char;
+        }
+      }
+      row.push(value.trim());
+      result.push(row);
+      return result;
+    }
+
+    function autoSchedule(startText) {
+      const baseDate = parseDate(startText) || new Date();
+      const ownerDates = new Map();
+      const priorityRank = { P0: 0, P1: 1, P2: 2 };
+      const candidates = rows
+        .filter(row => row.status !== "已完成")
+        .sort((a, b) => (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9));
+
+      candidates.forEach(row => {
+        const owner = row.owner || "未分配";
+        const available = ownerDates.get(owner) || new Date(baseDate);
+        const remainingPercent = Math.max(0, 100 - Number(row.progress || 0));
+        const totalSize = Number(row.size || 0);
+        const daily = Number(row.daily || 0);
+        const days = totalSize > 0 && daily > 0
+          ? Math.max(1, Math.ceil((totalSize * remainingPercent / 100) / daily))
+          : 1;
+        const due = addDays(available, days - 1);
+        row.start = formatDate(available);
+        row.due = formatDate(due);
+        ownerDates.set(owner, addDays(due, 1));
+      });
+    }
+
+    function parseDate(text) {
+      const match = String(text).trim().match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+      if (!match) return null;
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+
+    function addDays(date, days) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + days);
+      return next;
+    }
+
+    function formatDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}/${m}/${d}`;
+    }
+
+    function langCodeOf(lang) {
+      if (lang.includes("西")) return "es";
+      if (lang.includes("法")) return "fr";
+      if (lang.includes("英")) return "en";
+      if (lang.includes("德")) return "de";
+      if (lang.includes("葡")) return "pt";
+      if (lang.includes("日")) return "ja";
+      if (lang.includes("韩")) return "ko";
+      return "en";
+    }
+
+    function avatarOf(owner) {
+      const codes = ["a", "b", "c", "d", "e", "f", "g"];
+      let sum = 0;
+      for (const char of owner || "未") sum += char.charCodeAt(0);
+      return codes[sum % codes.length];
+    }
+
+    function defaultSize(group) {
+      return String(group).includes("术语库") ? 1749 : 0;
+    }
+
+    function defaultDaily(lang, owner, group) {
+      if (!String(group).includes("术语库")) return 0;
+      if (String(owner).includes("屿舟") || String(owner).includes("游城") || String(lang).includes("英")) return 1749;
+      if (String(lang).includes("法") || String(lang).includes("葡")) return 400;
+      if (String(lang).includes("德") || String(lang).includes("日")) return 438;
+      return 400;
+    }
+
+    function filteredRows() {
+      const q = els.search.value.trim().toLowerCase();
+      return rows.filter(row => {
+        const matchTask = els.taskFilter.value === "全部任务" || row.group === els.taskFilter.value;
+        const matchStatus = els.statusFilter.value === "全部状态" || row.status === els.statusFilter.value;
+        const text = [row.name, row.lang, row.owner, row.group, row.note].join(" ").toLowerCase();
+        return matchTask && matchStatus && (!q || text.includes(q));
+      });
+    }
+
+    function render() {
+      renderSummary();
+      if (currentView === "task") renderTaskTable();
+      if (currentView === "person") renderPersonCards();
+    }
+
+    function renderSummary() {
+      const total = rows.length;
+      const completed = rows.filter(row => row.status === "已完成").length;
+      const active = rows.filter(row => row.status === "进行中").length;
+      const avg = total ? Math.round(rows.reduce((sum, row) => sum + Number(row.progress || 0), 0) / total) : 0;
+      const termAvg = average(rows.filter(row => row.group === "GOT 术语库修改"));
+      const editAvg = average(rows.filter(row => row.group === "GOT 修改"));
+
+      const metrics = [
+        ["总任务", total + " 项"],
+        ["进行中", active + " 项"],
+        ["已完成", completed + " 项"],
+        ["整体进度", avg + "%"],
+        ["术语库平均", termAvg + "%"],
+        ["GOT 修改平均", editAvg + "%"],
+        ["BALL 优先任务", rows.filter(row => row.group === "BALL 修改").length + " 项"],
+        ["本地记忆", "已开启"]
+      ];
+
+      els.summaryGrid.innerHTML = metrics.map(item => `
+        <div class="metric">
+          <span>${item[0]}</span>
+          <strong>${item[1]}</strong>
+        </div>
+      `).join("");
+    }
+
+    function average(list) {
+      if (!list.length) return 0;
+      return Math.round(list.reduce((sum, row) => sum + Number(row.progress || 0), 0) / list.length);
+    }
+
+    function renderTaskTable() {
+      const list = filteredRows();
+      const groups = ["BALL 修改", "GOT 术语库修改", "GOT 修改"];
+      const html = groups.map(group => {
+        const groupRows = list.filter(row => row.group === group);
+        if (!groupRows.length) return "";
+        return `
+          <tr class="task-group">
+            <td class="drag">▸</td>
+            <td colspan="10">
+              <span class="task-name"><span class="star hot">★</span>${group}</span>
+            </td>
+          </tr>
+          ${groupRows.map(rowTemplate).join("")}
+        `;
+      }).join("");
+
+      els.taskRows.innerHTML = html;
+      els.emptyTask.classList.toggle("hidden", list.length > 0);
+      bindRowEvents();
+    }
+
+    function rowTemplate(row) {
+      return `
+        <tr data-id="${row.id}">
+          <td class="drag">⋮⋮</td>
+          <td title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</td>
+          <td><span class="lang ${row.langCode}">${escapeHtml(row.lang)}</span></td>
+          <td>
+            <span class="owner"><span class="avatar ${row.avatar}">${escapeHtml(row.owner.slice(0, 1))}</span><span>${escapeHtml(row.owner)}</span></span>
+          </td>
+          <td><span class="pill ${row.type === "术语库" ? "priority-p2" : "priority-p1"}">${escapeHtml(row.type)}</span></td>
+          <td>
+            <select class="status-select" data-field="status" data-status="${row.status}">
+              ${["未开始", "进行中", "待审核", "已完成", "暂停"].map(status => `<option ${status === row.status ? "selected" : ""}>${status}</option>`).join("")}
+            </select>
+          </td>
+          <td>
+            <select class="status-select" data-field="priority" data-status="${row.priority}">
+              ${["P0", "P1", "P2"].map(priority => `<option ${priority === row.priority ? "selected" : ""}>${priority}</option>`).join("")}
+            </select>
+          </td>
+          <td><input data-field="start" class="note" value="${escapeAttr(row.start || "")}" placeholder="开始日期"></td>
+          <td><input data-field="due" class="note" value="${escapeAttr(row.due || "")}" placeholder="截止日期"></td>
+          <td>
+            <div class="progress-cell">
+              <input data-field="progress" type="range" min="0" max="100" value="${row.progress}">
+              <input data-field="progressNumber" class="progress-number" type="number" min="0" max="100" value="${row.progress}">
+            </div>
+          </td>
+          <td><input data-field="note" class="note" value="${escapeAttr(row.note || "")}"></td>
+        </tr>
+      `;
+    }
+
+    function bindRowEvents() {
+      els.taskRows.querySelectorAll("tr[data-id]").forEach(tr => {
+        const row = rows.find(item => item.id === tr.dataset.id);
+        tr.querySelectorAll("[data-field]").forEach(input => {
+          input.addEventListener("input", () => updateRow(row, input, tr));
+          input.addEventListener("change", () => updateRow(row, input, tr));
+        });
+      });
+    }
+
+    function updateRow(row, input, tr) {
+      const field = input.dataset.field;
+      if (field === "progress") {
+        row.progress = clamp(input.value);
+        tr.querySelector('[data-field="progressNumber"]').value = row.progress;
+      }
+      if (field === "progressNumber") {
+        row.progress = clamp(input.value);
+        tr.querySelector('[data-field="progress"]').value = row.progress;
+      }
+      if (field === "status") {
+        row.status = input.value;
+        input.dataset.status = input.value;
+        if (row.status === "已完成" && Number(row.progress) < 100) row.progress = 100;
+        if (row.status !== "已完成" && Number(row.progress) === 100) row.progress = 99;
+        tr.querySelector('[data-field="progress"]').value = row.progress;
+        tr.querySelector('[data-field="progressNumber"]').value = row.progress;
+      }
+      if (field === "priority") {
+        row.priority = input.value;
+        input.dataset.status = input.value;
+      }
+      if (field === "start") {
+        row.start = input.value;
+      }
+      if (field === "due") {
+        row.due = input.value;
+      }
+      if (field === "note") {
+        row.note = input.value;
+      }
+      saveRows();
+      renderSummary();
+    }
+
+    function renderPersonCards() {
+      const list = filteredRows();
+      const owners = [...new Set(rows.map(row => row.owner))];
+      els.personView.innerHTML = owners.map(owner => {
+        const personRows = list.filter(row => row.owner === owner);
+        if (!personRows.length) return "";
+        const first = personRows[0];
+        const avg = average(personRows);
+        return `
+          <article class="person-card">
+            <header class="person-head">
+              <div class="person-title">
+                <span class="avatar ${first.avatar}">${escapeHtml(owner.slice(0, 1))}</span>
+                <span>${escapeHtml(owner)}</span>
+              </div>
+              <span class="person-meta">${personRows.length} 项 · ${avg}%</span>
+            </header>
+            <div class="person-body">
+              ${personRows.map(personTaskTemplate).join("")}
+            </div>
+          </article>
+        `;
+      }).join("") || `<div class="empty">没有符合条件的个人任务</div>`;
+    }
+
+    function personTaskTemplate(row) {
+      return `
+        <div class="mini-task">
+          <div class="mini-row">
+            <strong>${escapeHtml(row.name)}</strong>
+            <span class="pill priority-${row.priority.toLowerCase()}">${row.priority}</span>
+          </div>
+          <div class="mini-row">
+            <span><span class="lang ${row.langCode}">${escapeHtml(row.lang)}</span> ${escapeHtml(row.group)}</span>
+            <span>${escapeHtml(row.status)} · ${row.progress}%</span>
+          </div>
+          <div class="bar"><i style="width:${row.progress}%"></i></div>
+          <div class="mini-row">
+            <span class="person-meta">截止：${escapeHtml(row.due || "-")}</span>
+            <span class="person-meta">${escapeHtml(row.note || "")}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function clamp(value) {
+      return Math.max(0, Math.min(100, Number(value || 0)));
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replaceAll("`", "&#096;");
+    }
+
+    render();
+    loadRemoteRows();
+    setInterval(loadRemoteRows, 5000);
+  </script>
+</body>
+</html>
