@@ -36,7 +36,9 @@
 
     .app {
       min-height: 100vh;
-      padding: 22px 26px 34px;
+      padding: 22px 32px 34px;
+      max-width: 1560px;
+      margin: 0 auto;
     }
 
     .topbar {
@@ -165,18 +167,106 @@
       gap: 14px;
     }
 
+    .workspace {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr) 260px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .side-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .side-section {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .side-section:last-child {
+      border-bottom: 0;
+    }
+
+    .side-title {
+      margin: 0 0 10px;
+      color: #42516b;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .side-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .side-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 30px;
+      color: #26344d;
+      font-size: 13px;
+    }
+
+    .side-item strong {
+      color: var(--text);
+    }
+
+    .side-muted {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .side-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      height: 22px;
+      border-radius: 999px;
+      background: #eef3fb;
+      color: #536177;
+      padding: 0 8px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .side-chip.warn {
+      background: #fff1df;
+      color: #a35a00;
+    }
+
+    .side-chip.hot {
+      background: #ffe8ec;
+      color: #d0182d;
+    }
+
+    .quick-actions {
+      display: grid;
+      gap: 8px;
+    }
+
+    .quick-actions .btn {
+      width: 100%;
+    }
+
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
-      margin-bottom: 2px;
+      margin-bottom: 12px;
     }
 
     .metric {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 14px 16px;
+      padding: 12px 14px;
       box-shadow: var(--shadow);
     }
 
@@ -188,7 +278,7 @@
     }
 
     .metric strong {
-      font-size: 24px;
+      font-size: 22px;
       letter-spacing: 0;
     }
 
@@ -661,6 +751,53 @@
         display: none;
       }
     }
+
+    @media (max-width: 1280px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .side-section {
+        border-bottom: 0;
+        border-right: 1px solid var(--line-soft);
+      }
+
+      .side-section:last-child {
+        border-right: 0;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .app {
+        padding: 16px;
+      }
+
+      .topbar,
+      .toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .filters,
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .summary-grid,
+      .side-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .side-section {
+        border-right: 0;
+        border-bottom: 1px solid var(--line-soft);
+      }
+    }
   </style>
 </head>
 <body>
@@ -711,30 +848,34 @@
 
     <section class="summary-grid" id="summaryGrid"></section>
 
-    <section class="board" id="taskView">
-      <div class="panel">
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:38px"></th>
-                <th style="width:180px">任务名称</th>
-                <th style="width:92px">语种</th>
-                <th style="width:170px">负责人</th>
-                <th style="width:100px">任务类型</th>
-                <th style="width:108px">任务状态</th>
-                <th style="width:92px">优先级</th>
-                <th style="width:120px">开始日期</th>
-                <th style="width:120px">截止日期</th>
-                <th style="width:210px">当前进度</th>
-                <th style="width:230px">备注</th>
-              </tr>
-            </thead>
-            <tbody id="taskRows"></tbody>
-          </table>
+    <section class="workspace" id="taskView">
+      <aside class="side-panel" id="leftRail"></aside>
+      <section class="board">
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:38px"></th>
+                  <th style="width:180px">任务名称</th>
+                  <th style="width:92px">语种</th>
+                  <th style="width:170px">负责人</th>
+                  <th style="width:100px">任务类型</th>
+                  <th style="width:108px">任务状态</th>
+                  <th style="width:92px">优先级</th>
+                  <th style="width:120px">开始日期</th>
+                  <th style="width:120px">截止日期</th>
+                  <th style="width:210px">当前进度</th>
+                  <th style="width:230px">备注</th>
+                </tr>
+              </thead>
+              <tbody id="taskRows"></tbody>
+            </table>
+          </div>
+          <div class="empty hidden" id="emptyTask">没有符合条件的任务</div>
         </div>
-        <div class="empty hidden" id="emptyTask">没有符合条件的任务</div>
-      </div>
+      </section>
+      <aside class="side-panel" id="rightRail"></aside>
     </section>
 
     <section class="person-grid hidden" id="personView"></section>
@@ -860,6 +1001,8 @@
       taskRows: document.getElementById("taskRows"),
       personView: document.getElementById("personView"),
       taskView: document.getElementById("taskView"),
+      leftRail: document.getElementById("leftRail"),
+      rightRail: document.getElementById("rightRail"),
       emptyTask: document.getElementById("emptyTask"),
       summaryGrid: document.getElementById("summaryGrid"),
       search: document.getElementById("searchInput"),
@@ -1106,6 +1249,7 @@
       localStorage.setItem(STORE_KEY, JSON.stringify(rows));
       const time = new Date().toLocaleTimeString("zh-CN", { hour12: false });
       els.saveState.textContent = "已自动保存 " + time;
+      renderRails();
 
       if (location.protocol !== "file:") {
         clearTimeout(remoteSaveTimer);
@@ -1120,8 +1264,10 @@
             if (!response.ok) throw new Error("保存失败");
             lastRemoteRows = body;
             els.saveState.textContent = "已保存到共享数据 " + time;
+            renderRails();
           } catch {
             els.saveState.textContent = "共享保存失败，已保存在本机";
+            renderRails();
           }
         }, 250);
       }
@@ -1305,6 +1451,7 @@
     function render() {
       renderOwnerList();
       renderSummary();
+      renderRails();
       if (currentView === "task") renderTaskTable();
       if (currentView === "person") renderPersonCards();
     }
@@ -1326,11 +1473,7 @@
         ["总任务", total + " 项"],
         ["进行中", active + " 项"],
         ["已完成", completed + " 项"],
-        ["整体进度", avg + "%"],
-        ["术语库平均", termAvg + "%"],
-        ["GOT 修改平均", editAvg + "%"],
-        ["BALL 优先任务", rows.filter(row => row.group === "BALL 修改").length + " 项"],
-        ["本地记忆", "已开启"]
+        ["整体进度", avg + "%"]
       ];
 
       els.summaryGrid.innerHTML = metrics.map(item => `
@@ -1339,6 +1482,81 @@
           <strong>${item[1]}</strong>
         </div>
       `).join("");
+    }
+
+    function renderRails() {
+      if (!els.leftRail || !els.rightRail) return;
+      const list = filteredRows();
+      const groups = ["BALL 修改", "GOT 术语库修改", "GOT 修改"];
+      const lowProgress = rows
+        .filter(row => row.status !== "已完成" && Number(row.progress || 0) < 30)
+        .slice(0, 5);
+      const owners = [...new Set(list.map(row => row.owner).filter(Boolean))];
+      const ownerSummary = owners.map(owner => {
+        const ownRows = list.filter(row => row.owner === owner);
+        return { owner, count: ownRows.length, avg: average(ownRows) };
+      }).sort((a, b) => b.count - a.count || a.avg - b.avg).slice(0, 6);
+
+      els.leftRail.innerHTML = `
+        <div class="side-section">
+          <p class="side-title">任务分组</p>
+          <div class="side-list">
+            ${groups.map(group => {
+              const groupRows = rows.filter(row => row.group === group);
+              return `<div class="side-item"><span>${group}</span><span class="side-chip">${groupRows.length}</span></div>`;
+            }).join("")}
+          </div>
+        </div>
+        <div class="side-section">
+          <p class="side-title">需要关注</p>
+          <div class="side-list">
+            ${lowProgress.length ? lowProgress.map(row => `
+              <div class="side-item" title="${escapeAttr(row.name)}">
+                <span>${escapeHtml(shortText(row.name, 10))}</span>
+                <span class="side-chip ${row.priority === "P0" ? "hot" : "warn"}">${row.progress}%</span>
+              </div>
+            `).join("") : `<div class="side-muted">暂无低进度任务</div>`}
+          </div>
+        </div>
+        <div class="side-section">
+          <p class="side-title">同步状态</p>
+          <div class="side-muted">${escapeHtml(els.saveState.textContent || "已开启本地记忆")}</div>
+        </div>
+      `;
+
+      els.rightRail.innerHTML = `
+        <div class="side-section">
+          <p class="side-title">快捷操作</p>
+          <div class="quick-actions">
+            <button class="btn primary" data-quick="add">添加任务</button>
+            <button class="btn" data-quick="sync">同步系统进度</button>
+            <button class="btn" data-quick="schedule">自动排期</button>
+          </div>
+        </div>
+        <div class="side-section">
+          <p class="side-title">负责人负载</p>
+          <div class="side-list">
+            ${ownerSummary.length ? ownerSummary.map(item => `
+              <div class="side-item">
+                <span><strong>${escapeHtml(shortText(item.owner, 8))}</strong><span class="side-muted"> · ${item.avg}%</span></span>
+                <span class="side-chip">${item.count}</span>
+              </div>
+            `).join("") : `<div class="side-muted">暂无负责人</div>`}
+          </div>
+        </div>
+        <div class="side-section">
+          <p class="side-title">辅助信息</p>
+          <div class="side-list">
+            <div class="side-item"><span>术语库平均</span><span class="side-chip">${average(rows.filter(row => row.group === "GOT 术语库修改"))}%</span></div>
+            <div class="side-item"><span>GOT 修改平均</span><span class="side-chip">${average(rows.filter(row => row.group === "GOT 修改"))}%</span></div>
+            <div class="side-item"><span>BALL 优先</span><span class="side-chip">${rows.filter(row => row.group === "BALL 修改").length}</span></div>
+          </div>
+        </div>
+      `;
+
+      els.rightRail.querySelector('[data-quick="add"]')?.addEventListener("click", () => els.addTaskBtn.click());
+      els.rightRail.querySelector('[data-quick="sync"]')?.addEventListener("click", () => els.syncSystemBtn.click());
+      els.rightRail.querySelector('[data-quick="schedule"]')?.addEventListener("click", () => els.scheduleBtn.click());
     }
 
     function average(list) {
@@ -1520,6 +1738,11 @@
 
     function escapeAttr(value) {
       return escapeHtml(value).replaceAll("`", "&#096;");
+    }
+
+    function shortText(value, limit) {
+      const text = String(value || "");
+      return text.length > limit ? text.slice(0, limit) + "..." : text;
     }
 
     render();
