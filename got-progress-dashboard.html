@@ -25,7 +25,6 @@
 
     body {
       margin: 0;
-      min-width: 1120px;
       background: var(--bg);
       color: var(--text);
       font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
@@ -81,7 +80,7 @@
     }
 
     .actions .btn {
-      min-width: 92px;
+      width: 104px;
       text-align: center;
     }
 
@@ -168,7 +167,7 @@
 
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 12px;
       margin-bottom: 2px;
     }
@@ -201,8 +200,15 @@
       box-shadow: var(--shadow);
     }
 
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
     table {
       width: 100%;
+      min-width: 1360px;
       border-collapse: collapse;
       table-layout: fixed;
     }
@@ -225,6 +231,37 @@
       position: sticky;
       top: 0;
       z-index: 2;
+    }
+
+    tbody td {
+      background: #fff;
+    }
+
+    th:nth-child(1),
+    td:nth-child(1),
+    th:nth-child(2),
+    td:nth-child(2) {
+      position: sticky;
+      background: inherit;
+    }
+
+    th:nth-child(1),
+    td:nth-child(1) {
+      left: 0;
+      z-index: 4;
+    }
+
+    th:nth-child(2),
+    td:nth-child(2) {
+      left: 38px;
+      z-index: 4;
+      box-shadow: 1px 0 0 var(--line-soft);
+    }
+
+    th:nth-child(1),
+    th:nth-child(2) {
+      background: #fbfcfe;
+      z-index: 6;
     }
 
     tr.task-group td {
@@ -365,6 +402,10 @@
       padding: 0 8px;
       background: #fff;
       color: #26344d;
+    }
+
+    .note-input {
+      min-width: 180px;
     }
 
     .owner {
@@ -631,6 +672,7 @@
       </div>
       <div class="actions">
         <button class="btn primary" id="addTaskBtn">添加任务</button>
+        <button class="btn" id="syncSystemBtn">同步系统进度</button>
         <label class="btn" for="appendFile">导入新任务</label>
         <input class="hidden" id="appendFile" type="file" accept=".json,.csv,text/csv,application/json">
         <button class="btn" id="scheduleBtn">自动排期</button>
@@ -671,24 +713,26 @@
 
     <section class="board" id="taskView">
       <div class="panel">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:38px"></th>
-              <th style="width:180px">任务名称</th>
-              <th style="width:92px">语种</th>
-              <th style="width:170px">负责人</th>
-              <th style="width:100px">任务类型</th>
-              <th style="width:108px">任务状态</th>
-              <th style="width:92px">优先级</th>
-              <th style="width:120px">开始日期</th>
-              <th style="width:120px">截止日期</th>
-              <th style="width:210px">当前进度</th>
-              <th>备注</th>
-            </tr>
-          </thead>
-          <tbody id="taskRows"></tbody>
-        </table>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:38px"></th>
+                <th style="width:180px">任务名称</th>
+                <th style="width:92px">语种</th>
+                <th style="width:170px">负责人</th>
+                <th style="width:100px">任务类型</th>
+                <th style="width:108px">任务状态</th>
+                <th style="width:92px">优先级</th>
+                <th style="width:120px">开始日期</th>
+                <th style="width:120px">截止日期</th>
+                <th style="width:210px">当前进度</th>
+                <th style="width:230px">备注</th>
+              </tr>
+            </thead>
+            <tbody id="taskRows"></tbody>
+          </table>
+        </div>
         <div class="empty hidden" id="emptyTask">没有符合条件的任务</div>
       </div>
     </section>
@@ -810,6 +854,7 @@
     let currentView = "task";
     let lastRemoteRows = "";
     let remoteSaveTimer = null;
+    let systemSyncEnabled = false;
 
     const els = {
       taskRows: document.getElementById("taskRows"),
@@ -822,6 +867,7 @@
       statusFilter: document.getElementById("statusFilter"),
       saveState: document.getElementById("saveState"),
       addTaskBtn: document.getElementById("addTaskBtn"),
+      syncSystemBtn: document.getElementById("syncSystemBtn"),
       appendFile: document.getElementById("appendFile"),
       scheduleBtn: document.getElementById("scheduleBtn"),
       exportBtn: document.getElementById("exportBtn"),
@@ -904,6 +950,10 @@
       saveRows();
       render();
       alert("已按负责人、优先级和每日能力自动排期");
+    });
+
+    els.syncSystemBtn.addEventListener("click", () => {
+      syncGlossaryProgress({ silent: false });
     });
 
     els.exportBtn.addEventListener("click", () => {
@@ -1011,6 +1061,44 @@
         }
       } catch {
         els.saveState.textContent = "共享同步暂不可用，当前改动仍会保存在本机";
+      }
+    }
+
+    async function syncGlossaryProgress({ silent } = { silent: true }) {
+      try {
+        const response = await fetch("https://lqa.qixuanzhen.site/api/translation/glossary/stats", {
+          credentials: "include",
+          cache: "no-store"
+        });
+        if (!response.ok) throw new Error("读取系统统计失败");
+        const stats = await response.json();
+        const total = Number(stats.total || 0);
+        const confirmed = stats.confirmed_by_lang || {};
+        if (!total || !Object.keys(confirmed).length) throw new Error("系统统计数据为空");
+
+        let changed = 0;
+        rows.forEach(row => {
+          if (row.group !== "GOT 术语库修改") return;
+          const systemCode = systemLangCode(row.langCode, row.lang);
+          if (!systemCode || confirmed[systemCode] === undefined) return;
+          const done = Number(confirmed[systemCode] || 0);
+          row.size = total;
+          row.progress = Math.round(done / total * 100);
+          row.note = upsertSystemNote(row.note, done, total);
+          if (row.progress >= 100) row.status = "已完成";
+          else if (row.progress > 0 && row.status === "未开始") row.status = "进行中";
+          changed++;
+        });
+
+        saveRows();
+        render();
+        systemSyncEnabled = true;
+        els.saveState.textContent = `已同步系统术语库进度：${changed} 项`;
+        if (!silent) alert(`已同步系统术语库进度：${changed} 项`);
+      } catch (error) {
+        const message = "系统同步不可用：GitHub Pages 跨域页面无法直接读取 LQA 登录接口。需要部署到 lqa.qixuanzhen.site 同源系统内。";
+        els.saveState.textContent = message;
+        if (!silent) alert(message);
       }
     }
 
@@ -1166,6 +1254,25 @@
       return "en";
     }
 
+    function systemLangCode(code, lang) {
+      const byCode = { en: "en", de: "de", fr: "fr", es: "es", pt: "pt", ja: "jp", ko: "kr", jp: "jp", kr: "kr" };
+      if (byCode[code]) return byCode[code];
+      if (lang.includes("英")) return "en";
+      if (lang.includes("德")) return "de";
+      if (lang.includes("法")) return "fr";
+      if (lang.includes("西")) return "es";
+      if (lang.includes("葡")) return "pt";
+      if (lang.includes("日")) return "jp";
+      if (lang.includes("韩")) return "kr";
+      return "";
+    }
+
+    function upsertSystemNote(note, done, total) {
+      const prefix = `系统确认 ${done}/${total}`;
+      const rest = String(note || "").replace(/系统确认\s+\d+\/\d+\s*；?\s*/g, "").trim();
+      return rest ? `${prefix}；${rest}` : prefix;
+    }
+
     function avatarOf(owner) {
       const codes = ["a", "b", "c", "d", "e", "f", "g"];
       let sum = 0;
@@ -1174,7 +1281,7 @@
     }
 
     function defaultSize(group) {
-      return String(group).includes("术语库") ? 1749 : 0;
+      return String(group).includes("术语库") ? 1747 : 0;
     }
 
     function defaultDaily(lang, owner, group) {
@@ -1292,7 +1399,7 @@
               <input data-field="progressNumber" class="progress-number" type="number" min="0" max="100" value="${row.progress}">
             </div>
           </td>
-          <td><input data-field="note" class="note" value="${escapeAttr(row.note || "")}"></td>
+          <td><input data-field="note" class="note note-input" value="${escapeAttr(row.note || "")}"></td>
         </tr>
       `;
     }
@@ -1418,6 +1525,12 @@
     render();
     loadRemoteRows();
     setInterval(loadRemoteRows, 5000);
+    syncGlossaryProgress({ silent: true });
+    setInterval(() => {
+      if (systemSyncEnabled || location.hostname.endsWith("qixuanzhen.site")) {
+        syncGlossaryProgress({ silent: true });
+      }
+    }, 60000);
   </script>
 </body>
 </html>
