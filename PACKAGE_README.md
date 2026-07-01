@@ -17,6 +17,14 @@ https://lqa.qixuanzhen.site/translation
 - `got-progress-data.json`：当前初始化任务数据。
 - `got-progress-server.js`：本地共享原型服务，正式接入 LQA 时不建议使用。
 
+## 当前 UI 约定
+
+- 任务表尽量压缩在中间区域，不使用横向进度条。
+- 进度用紧凑数字输入框显示，例如 `70`。
+- 优先级使用一个下拉选择框，当前值按 P0/P1/P2 着色，点击后向下展开选项。
+- 负责人支持直接修改，正式接入时应使用 `/api/permission/members` 作为负责人来源。
+- 独立原型页面的 GitHub Pages 不负责正式共享保存，正式共享保存必须接入 LQA 后端任务接口。
+
 ## 最重要的接口
 
 术语库各语种实时进度必须对准：
@@ -52,3 +60,17 @@ stats.confirmed_by_lang
 
 请阅读 `CLAUDE_CODE_GUIDE.md` 和 `API_MAPPING.md`，把 `got-progress-dashboard.html` 的任务进度能力接入 LQA 系统 `/translation` 工作台，新增一个“任务进度”Tab。GOT 术语库任务进度必须从 `/api/translation/glossary/stats` 实时读取，按语言分别映射到对应任务。
 
+## 接入时最重要的判断
+
+这个包不是让 Claude Code 继续维护一个 GitHub 静态网页，而是让 Claude Code 把任务进度模块做进 LQA 系统：
+
+```text
+https://lqa.qixuanzhen.site/translation
+https://lqa.qixuanzhen.site/glossary
+```
+
+如果 Claude Code 问数据从哪里来，答案是：
+
+- GOT 术语库进度来自 `/api/translation/glossary/stats`
+- 负责人来自 `/api/permission/members`
+- 自定义任务需要新增 `/api/translation/tasks` 持久化接口
