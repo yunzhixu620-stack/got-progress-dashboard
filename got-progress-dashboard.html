@@ -80,6 +80,11 @@
       white-space: nowrap;
     }
 
+    .actions .btn {
+      min-width: 92px;
+      text-align: center;
+    }
+
     .btn:hover {
       border-color: #b9c5d8;
       box-shadow: 0 4px 14px rgba(30, 45, 70, .08);
@@ -308,6 +313,28 @@
     .status-select[data-status="已完成"] { background: #dff8eb; color: #087345; border-color: #8de0b8; }
     .status-select[data-status="暂停"] { background: #f1eefb; color: #6b46c1; border-color: #c9b9f2; }
 
+    .priority-select {
+      font-weight: 800;
+    }
+
+    .priority-select[data-priority="P0"] {
+      background: #ffe8ec;
+      color: #d0182d;
+      border-color: #ffb6c0;
+    }
+
+    .priority-select[data-priority="P1"] {
+      background: #fff1df;
+      color: #a35a00;
+      border-color: #ffd49a;
+    }
+
+    .priority-select[data-priority="P2"] {
+      background: #e6f8ff;
+      color: #087596;
+      border-color: #a9dff1;
+    }
+
     .progress-cell {
       display: grid;
       grid-template-columns: 1fr 46px;
@@ -364,6 +391,17 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .owner-input {
+      width: calc(100% - 32px);
+      height: 30px;
+      min-width: 88px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 8px;
+      background: #fff;
+      color: var(--text);
     }
 
     .avatar.a { background: #8b5cf6; }
@@ -682,7 +720,7 @@
           </div>
           <div class="form-field">
             <label>负责人</label>
-            <input name="owner" required placeholder="负责人姓名">
+            <input name="owner" required list="ownerList" placeholder="负责人姓名">
           </div>
           <div class="form-field">
             <label>任务类型</label>
@@ -741,6 +779,7 @@
         </div>
       </form>
     </section>
+    <datalist id="ownerList"></datalist>
   </main>
 
   <script>
@@ -793,7 +832,8 @@
       taskModal: document.getElementById("taskModal"),
       taskForm: document.getElementById("taskForm"),
       closeModalBtn: document.getElementById("closeModalBtn"),
-      clearFormBtn: document.getElementById("clearFormBtn")
+      clearFormBtn: document.getElementById("clearFormBtn"),
+      ownerList: document.getElementById("ownerList")
     };
 
     document.querySelectorAll(".tab").forEach(button => {
@@ -1156,9 +1196,15 @@
     }
 
     function render() {
+      renderOwnerList();
       renderSummary();
       if (currentView === "task") renderTaskTable();
       if (currentView === "person") renderPersonCards();
+    }
+
+    function renderOwnerList() {
+      const owners = [...new Set(rows.map(row => row.owner).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN"));
+      els.ownerList.innerHTML = owners.map(owner => `<option value="${escapeAttr(owner)}"></option>`).join("");
     }
 
     function renderSummary() {
@@ -1222,7 +1268,10 @@
           <td title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</td>
           <td><span class="lang ${row.langCode}">${escapeHtml(row.lang)}</span></td>
           <td>
-            <span class="owner"><span class="avatar ${row.avatar}">${escapeHtml(row.owner.slice(0, 1))}</span><span>${escapeHtml(row.owner)}</span></span>
+            <span class="owner">
+              <span class="avatar ${row.avatar}">${escapeHtml((row.owner || "未").slice(0, 1))}</span>
+              <input data-field="owner" class="owner-input" list="ownerList" value="${escapeAttr(row.owner || "")}" placeholder="负责人">
+            </span>
           </td>
           <td><span class="pill ${row.type === "术语库" ? "priority-p2" : "priority-p1"}">${escapeHtml(row.type)}</span></td>
           <td>
@@ -1231,7 +1280,7 @@
             </select>
           </td>
           <td>
-            <select class="status-select" data-field="priority" data-status="${row.priority}">
+            <select class="status-select priority-select" data-field="priority" data-priority="${row.priority}">
               ${["P0", "P1", "P2"].map(priority => `<option ${priority === row.priority ? "selected" : ""}>${priority}</option>`).join("")}
             </select>
           </td>
@@ -1278,7 +1327,17 @@
       }
       if (field === "priority") {
         row.priority = input.value;
-        input.dataset.status = input.value;
+        input.dataset.priority = input.value;
+      }
+      if (field === "owner") {
+        row.owner = input.value.trim();
+        row.avatar = avatarOf(row.owner);
+        const avatar = tr.querySelector(".avatar");
+        if (avatar) {
+          avatar.className = `avatar ${row.avatar}`;
+          avatar.textContent = (row.owner || "未").slice(0, 1);
+        }
+        renderOwnerList();
       }
       if (field === "start") {
         row.start = input.value;
@@ -1291,6 +1350,7 @@
       }
       saveRows();
       renderSummary();
+      if (currentView === "person") renderPersonCards();
     }
 
     function renderPersonCards() {
