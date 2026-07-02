@@ -1,0 +1,1 @@
+session=YOUR_SESSION_COOKIE_HERE; other_cookie=VALUE

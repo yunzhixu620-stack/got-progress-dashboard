@@ -62,14 +62,17 @@
     }
 
     .actions {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(7, 104px);
       align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
       justify-content: flex-end;
     }
 
     .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       height: 34px;
       border: 1px solid var(--line);
       border-radius: 7px;
@@ -1217,12 +1220,7 @@
 
     async function syncGlossaryProgress({ silent } = { silent: true }) {
       try {
-        const response = await fetch("https://lqa.qixuanzhen.site/api/translation/glossary/stats", {
-          credentials: "include",
-          cache: "no-store"
-        });
-        if (!response.ok) throw new Error("读取系统统计失败");
-        const stats = await response.json();
+        const stats = await fetchGlossaryStats();
         const total = Number(stats.total || 0);
         const confirmed = stats.confirmed_by_lang || {};
         if (!total || !Object.keys(confirmed).length) throw new Error("系统统计数据为空");
@@ -1251,6 +1249,26 @@
         els.saveState.textContent = message;
         if (!silent) alert(message);
       }
+    }
+
+    async function fetchGlossaryStats() {
+      const localHostnames = new Set(["localhost", "127.0.0.1", "::1"]);
+      const useLocalProxy = location.protocol !== "file:" && (
+        localHostnames.has(location.hostname) ||
+        /^192\.168\.|^10\.|^172\.(1[6-9]|2\d|3[0-1])\./.test(location.hostname)
+      );
+      const url = useLocalProxy
+        ? "/api/glossary-stats"
+        : "https://lqa.qixuanzhen.site/api/translation/glossary/stats";
+      const response = await fetch(url, {
+        credentials: "include",
+        cache: "no-store"
+      });
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(text || "读取系统统计失败");
+      }
+      return response.json();
     }
 
     function saveRows() {

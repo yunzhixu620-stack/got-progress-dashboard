@@ -14,8 +14,10 @@ https://lqa.qixuanzhen.site/translation
 - `API_MAPPING.md`：术语库进度、成员、翻译统计接口映射。
 - `CLAUDE_CODE_GUIDE.md`：给 Claude Code 的实施教程。
 - `SYSTEM_INTEGRATION.md`：系统接入设计说明。
+- `LOCAL_SYNC_SETUP.md`：先在你电脑上运行并读取 LQA 术语库进度的本机方案。
 - `got-progress-data.json`：当前初始化任务数据。
 - `got-progress-server.js`：本地共享原型服务，正式接入 LQA 时不建议使用。
+- `lqa-cookie.example.txt`：本机代理读取 LQA 接口时的 Cookie 示例，不要提交真实 Cookie。
 
 ## 当前 UI 约定
 
@@ -24,6 +26,18 @@ https://lqa.qixuanzhen.site/translation
 - 优先级使用一个下拉选择框，当前值按 P0/P1/P2 着色，点击后向下展开选项。
 - 负责人支持直接修改，正式接入时应使用 `/api/permission/members` 作为负责人来源。
 - 独立原型页面的 GitHub Pages 不负责正式共享保存，正式共享保存必须接入 LQA 后端任务接口。
+
+## 如果先接在个人电脑上
+
+用 `start-got-progress-dashboard.bat` 启动，然后打开：
+
+```text
+http://localhost:8787/
+```
+
+不要使用 `file:///.../got-progress-dashboard.html`。
+
+如果要让本机页面读取 LQA 术语库实时进度，需要按 `LOCAL_SYNC_SETUP.md` 配置 `lqa-cookie.txt`。真实 Cookie 只放在你自己的电脑上，不进入 GitHub，不进入交付包。
 
 ## 最重要的接口
 

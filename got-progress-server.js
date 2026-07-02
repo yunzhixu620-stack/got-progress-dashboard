@@ -5,7 +5,9 @@ const path = require("path");
 const root = __dirname;
 const htmlPath = path.join(root, "got-progress-dashboard.html");
 const dataPath = path.join(root, "got-progress-data.json");
+const cookiePath = path.join(root, "lqa-cookie.txt");
 const port = Number(process.env.PORT || 8787);
+const glossaryStatsUrl = "https://lqa.qixuanzhen.site/api/translation/glossary/stats";
 
 function readDefaultRows() {
   const html = fs.readFileSync(htmlPath, "utf8");
@@ -30,6 +32,38 @@ function writeRows(rows) {
   const tempPath = dataPath + ".tmp";
   fs.writeFileSync(tempPath, JSON.stringify(rows, null, 2), "utf8");
   fs.renameSync(tempPath, dataPath);
+}
+
+function readLqaCookie() {
+  const fromEnv = process.env.LQA_COOKIE || "";
+  if (fromEnv.trim()) return fromEnv.trim();
+  if (fs.existsSync(cookiePath)) {
+    return fs.readFileSync(cookiePath, "utf8").trim();
+  }
+  return "";
+}
+
+async function readGlossaryStats() {
+  const cookie = readLqaCookie();
+  if (!cookie) {
+    const error = new Error("缺少 LQA 登录 Cookie。请在 outputs/lqa-cookie.txt 中放入 lqa.qixuanzhen.site 的 Cookie，或设置 LQA_COOKIE 环境变量。");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const response = await fetch(glossaryStatsUrl, {
+    headers: {
+      Cookie: cookie,
+      Accept: "application/json"
+    }
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    const error = new Error(`LQA 统计接口读取失败：${response.status} ${text.slice(0, 300)}`);
+    error.statusCode = response.status;
+    throw error;
+  }
+  return JSON.parse(text);
 }
 
 function send(res, status, body, type = "application/json; charset=utf-8") {
@@ -84,9 +118,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (url.pathname === "/api/glossary-stats" && req.method === "GET") {
+      send(res, 200, JSON.stringify(await readGlossaryStats()));
+      return;
+    }
+
     send(res, 404, JSON.stringify({ error: "Not found" }));
   } catch (error) {
-    send(res, 500, JSON.stringify({ error: error.message }));
+    send(res, error.statusCode || 500, JSON.stringify({ error: error.message }));
   }
 });
 
